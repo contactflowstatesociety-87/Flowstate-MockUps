@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { ControlPanel } from './components/ControlPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import FitCheckTool from './components/FitCheckTool';
+import FlowstateTool from './components/FlowstateTool';
 import { generateMockupBatch } from './services/geminiService';
 import { saveBatch, getHistory } from './services/storage';
 import { AppStatus, GeneratedImageBatch, MockupConfig, AIStudio, NavigationPage } from './types';
-import { Box, Key, CheckCircle, Shirt } from 'lucide-react';
+import { Box, Key, CheckCircle, Shirt, Cpu } from 'lucide-react';
 
 // ------------------------------------------------------------------
 // CONFIGURATION
@@ -135,7 +137,7 @@ const App: React.FC = () => {
         <div className="hidden md:flex bg-surface p-1 rounded-lg border border-border">
           <button 
             onClick={() => setActivePage('mockup')}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${activePage === 'mockup' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activePage === 'mockup' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
           >
             Mockup Generator
           </button>
@@ -144,6 +146,12 @@ const App: React.FC = () => {
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activePage === 'fitcheck' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
           >
             <Shirt size={14} /> Fit Check
+          </button>
+          <button 
+            onClick={() => setActivePage('engine')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activePage === 'engine' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
+          >
+            <Cpu size={14} /> Flowstate Engine
           </button>
         </div>
         
@@ -171,9 +179,9 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-grow flex flex-col">
-        {activePage === 'mockup' ? (
-            <main className="p-4 lg:p-8 max-w-[1600px] mx-auto w-full flex flex-col lg:flex-row gap-8">
+      <div className="flex-grow flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+        {activePage === 'mockup' && (
+            <main className="p-4 lg:p-8 max-w-[1600px] mx-auto w-full flex flex-col lg:flex-row gap-8 overflow-y-auto">
             <ControlPanel 
                 isLoading={status === AppStatus.GENERATING} 
                 onSubmit={handleGenerate} 
@@ -185,8 +193,14 @@ const App: React.FC = () => {
                 onSelectHistory={handleSelectHistory}
             />
             </main>
-        ) : (
+        )}
+        
+        {activePage === 'fitcheck' && (
             <FitCheckTool />
+        )}
+
+        {activePage === 'engine' && (
+            <FlowstateTool />
         )}
       </div>
 

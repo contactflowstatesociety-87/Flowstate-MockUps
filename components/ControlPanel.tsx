@@ -82,7 +82,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ isLoading, onSubmit 
     if (files) {
       const remainingSlots = 4 - uploadedImages.length;
       const filesToProcess = Array.from(files).slice(0, remainingSlots);
-      filesToProcess.forEach(file => {
+      filesToProcess.forEach((file: any) => {
         const reader = new FileReader();
         reader.onloadend = () => setUploadedImages(prev => [...prev, reader.result as string]);
         reader.readAsDataURL(file);
@@ -100,7 +100,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ isLoading, onSubmit 
     if (files) {
       const remainingSlots = 4 - scannerImages.length;
       const filesToProcess = Array.from(files).slice(0, remainingSlots);
-      filesToProcess.forEach(file => {
+      filesToProcess.forEach((file: any) => {
         const reader = new FileReader();
         reader.onloadend = () => setScannerImages(prev => [...prev, reader.result as string]);
         reader.readAsDataURL(file);

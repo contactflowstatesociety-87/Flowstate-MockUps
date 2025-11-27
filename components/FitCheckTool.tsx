@@ -142,7 +142,7 @@ const FitCheckTool: React.FC = () => {
       // Save to history automatically on successful fit
       saveToHistory(newImageUrl, garmentInfo.name);
 
-    } catch (err) {
+    } catch (err: any) {
       setError(getFriendlyErrorMessage(err, 'Failed to apply garment'));
     } finally {
       setIsLoading(false);
@@ -170,7 +170,7 @@ const FitCheckTool: React.FC = () => {
         return newHistory;
       });
       setCurrentPoseIndex(newIndex);
-    } catch (err) {
+    } catch (err: any) {
       setError(getFriendlyErrorMessage(err, 'Failed to change pose'));
     } finally {
       setIsLoading(false);
@@ -189,7 +189,7 @@ const FitCheckTool: React.FC = () => {
               try {
                   const url = await generateModelImage(e.target.files[0]);
                   handleModelFinalized(url);
-              } catch (err) {
+              } catch (err: any) {
                   setLocalError(getFriendlyErrorMessage(err, "Failed to create model"));
               } finally {
                   setIsProcessing(false);

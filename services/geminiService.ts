@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Modality } from "@google/genai";
-import { MockupConfig } from "../types";
+import { MockupConfig, EngineMode } from "../types";
+import type { Operation, GenerateVideosResponse } from "@google/genai";
 
 const getClient = () => {
   const apiKey = process.env.API_KEY;
@@ -28,6 +29,101 @@ const fileToPart = async (file: File) => {
     });
     return dataUrlToPart(dataUrl);
 };
+
+// ------------------------------------------------------------------
+// ENGINE SERVICE (New Features)
+// ------------------------------------------------------------------
+
+const modeHeaderMap: Record<string, string> = {
+  default: "Mode Default5X. Use the full Flowstate Society 5X Generation Engine. You must generate one of each style (Strict, Flexible, Ecommerce, Luxury, Complex) to provide a full range of options.",
+  strict: "Mode Strict. Activate Strict Only Mode. Generate only strict outputs with locked lighting, locked camera, and zero creative variation.",
+  flexible: "Mode Flexible. Activate Flexible Only Mode. Generate only flexible premium creative outputs while keeping product details accurate.",
+  ecommerce: "Mode Ecommerce. Activate Ecommerce Optimized Mode for clean white or light gray backgrounds and marketplace ready outputs.",
+  luxury: "Mode Luxury. Activate Luxury Brand Advertising Mode with cinematic lighting and premium commercial style while preserving product accuracy.",
+  complex: "Mode ComplexMaterial. Activate Complex Material Mode for highly accurate soft shell, down, fleece, nylon, leather, and other technical fabrics."
+};
+
+const getModeHeader = (mode: EngineMode) => modeHeaderMap[mode] || modeHeaderMap['default'];
+
+interface GenerationResult {
+    base64: string;
+    mimeType: string;
+}
+
+const transformImage = async (base64Images: string | string[], mimeType: string, prompt: string): Promise<GenerationResult> => {
+    const ai = getClient();
+    const images = Array.isArray(base64Images) ? base64Images : [base64Images];
+    const parts: any[] = images.filter(Boolean).map(b64 => ({ inlineData: { data: b64, mimeType } }));
+    parts.push({ text: prompt });
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts },
+        config: { responseModalities: [Modality.IMAGE] },
+    });
+
+    for (const candidate of response.candidates ?? []) {
+        const imagePart = candidate.content?.parts?.find((part: any) => part.inlineData);
+        if (imagePart?.inlineData) {
+            return { base64: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType || 'image/png' };
+        }
+    }
+    throw new Error("No image generated.");
+};
+
+export const engineService = {
+  generateStrictFlatLay: async (base64Image: string, mimeType: string, mode: EngineMode) => {
+    const header = getModeHeader(mode);
+    const prompt = `${header}\nPHASE 1: STRICT MODE FLAT LAY\nGenerate an ULTRA-HIGH RESOLUTION 8K studio flat lay. Rules: Extract Product Truth. Preserve silhouette, logos, stitching. CRITICAL: EXACT COPY REQUIRED. DO NOT CHANGE LOGO. Clean gradient background. Soft lighting.`;
+    return transformImage(base64Image, mimeType, prompt);
+  },
+
+  generateStrict3DMockup: async (base64Images: string[], mimeType: string, mode: EngineMode) => {
+    const header = getModeHeader(mode);
+    const prompt = `${header}\nPHASE 2: STRICT 3D MOCKUP\nGenerate 8K 3D mockup.\nCATEGORY RULES:\n1. CLOTHING: Use INVISIBLE GHOST MANNEQUIN. Floating, hollow form. NO VISIBLE BODY PARTS.\n2. ACCESSORY: Floating 3D object. PRESERVE DIALS/LOGOS EXACTLY. NO MANNEQUIN.\nUniversal: Soft studio light. Clean background.`;
+    return transformImage(base64Images, mimeType, prompt);
+  },
+
+  generateFlexibleStudioPhoto: async (base64Images: string[], mimeType: string, mode: EngineMode) => {
+    const header = getModeHeader(mode);
+    const prompt = `${header}\nPHASE 3: FLEXIBLE STUDIO PHOTO\nGenerate Premium 8K Photo.\nRULES:\n- CLOTHING: INVISIBLE GHOST MANNEQUIN. Floating.\n- ACCESSORY: Floating 3D Object.\n- Allow creative lighting and backgrounds.`;
+    return transformImage(base64Images, mimeType, prompt);
+  },
+
+  editImage: async (base64: string, mimeType: string, userPrompt: string) => {
+    const prompt = `Edit this image: "${userPrompt}". Maintain high quality. Use markup as guide then remove it. Preserve product details.`;
+    return transformImage(base64, mimeType, prompt);
+  },
+
+  generateFlexibleVideo: async (base64Image: string, mimeType: string, mode: EngineMode): Promise<Operation<GenerateVideosResponse>> => {
+    const header = getModeHeader(mode);
+    const prompt = `${header}\nPHASE 3: FLEXIBLE VIDEO\nRules: CLOTHING=GHOST MANNEQUIN (Hollow). ACCESSORY=Floating Object. SILENT VIDEO. NO AUDIO.`;
+    const ai = getClient();
+    return ai.models.generateVideos({
+        model: 'veo-3.1-fast-generate-preview',
+        image: { imageBytes: base64Image, mimeType },
+        prompt,
+        config: { numberOfVideos: 1, resolution: '1080p', aspectRatio: '9:16' }
+    });
+  },
+
+  generateVideoFromImage: async (base64Image: string, mimeType: string, prompt: string, aspectRatio: '16:9' | '9:16'): Promise<Operation<GenerateVideosResponse>> => {
+    const ai = getClient();
+    const safePrompt = `${prompt} CRITICAL: EXACT COPY. SILENT VIDEO.`;
+    return ai.models.generateVideos({
+        model: 'veo-3.1-fast-generate-preview',
+        image: { imageBytes: base64Image, mimeType },
+        prompt: safePrompt,
+        config: { numberOfVideos: 1, resolution: '1080p', aspectRatio }
+    });
+  },
+
+  checkVideoOperationStatus: async (operation: Operation<GenerateVideosResponse>) => {
+      const ai = getClient();
+      return ai.operations.getVideosOperation({ operation });
+  }
+};
+
 
 // ------------------------------------------------------------------
 // FIT CHECK SERVICES
@@ -206,7 +302,7 @@ const generateSingleImage = async (ai: GoogleGenAI, config: MockupConfig, index:
         `;
     }
 
-    finalPrompt += ` QUALITY: Photorealistic, 8k resolution, highly detailed, octane render, raw photo, masterpiece.`;
+    finalPrompt += ` QUALITY: Photorealistic, 8k resolution, highly detailed, octane render, raw photo, masterpiece, upscale to 6K resolution.`;
 
   } else {
     // Standard Text Logic
@@ -252,6 +348,33 @@ const generateSingleImage = async (ai: GoogleGenAI, config: MockupConfig, index:
   }
   
   throw new Error("No image generated");
+};
+
+// New feature: Animate any image using Veo
+export const animateImage = async (base64Data: string, mimeType: string, prompt: string): Promise<string> => {
+    const ai = getClient();
+    const finalPrompt = `Animate this image: ${prompt}. Cinematic movement, high quality, silent.`;
+    
+    // Using fast-generate for speed on interactive animations
+    const model = 'veo-3.1-fast-generate-preview';
+    
+    let operation = await ai.models.generateVideos({
+        model,
+        prompt: finalPrompt,
+        image: { imageBytes: base64Data, mimeType },
+        config: { numberOfVideos: 1, resolution: '1080p', aspectRatio: '16:9' } // Default aspect
+    });
+
+    while (!operation.done) {
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        operation = await ai.operations.getVideosOperation({ operation: operation });
+    }
+
+    const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (videoUri) {
+        return `${videoUri}&key=${process.env.API_KEY}`;
+    }
+    throw new Error("Video generation failed");
 };
 
 export const generateMockupBatch = async (config: MockupConfig): Promise<{images: string[], video?: string}> => {

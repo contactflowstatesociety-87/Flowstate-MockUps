@@ -28,7 +28,7 @@ export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 export type Resolution = '1K' | '2K' | '4K';
 export type AestheticStyle = 'Modern Minimal' | 'Cyberpunk' | 'Organic/Eco' | 'High Luxury' | 'Retro 90s' | 'Streetwear';
 export type GenerationMode = 'text' | 'upload' | '3d-scanner';
-export type NavigationPage = 'mockup' | 'fitcheck';
+export type NavigationPage = 'mockup' | 'fitcheck' | 'engine';
 
 export interface MockupConfig {
   mode: GenerationMode;
@@ -71,4 +71,47 @@ export interface PromptBuilderOption {
   text: string;
   tooltip: string;
   icon?: any; // Lucide icon component
+}
+
+// --- FLOWSTATE ENGINE TYPES ---
+
+export type EngineMode = 'default' | 'strict' | 'flexible' | 'ecommerce' | 'luxury' | 'complex';
+export type WorkflowStep = 'upload' | 'flatlay' | 'animate' | 'scene';
+
+export interface AnimationConfig {
+  preset: string | null;
+  aspectRatio: '16:9' | '9:16';
+  customPrompt: string | null;
+  generateStatic: boolean;
+  generateVideo: boolean;
+}
+
+export interface Asset {
+  id: string;
+  type: 'image' | 'video';
+  label?: string;
+  originalFile: { name: string; type: string; };
+  originalB64: string;
+  processedB64?: string;
+  processedUrl?: string;
+  prompt?: string;
+}
+
+export interface EditorState {
+  currentStep: WorkflowStep;
+  generationMode: EngineMode;
+  uploadedAssets: Asset[];
+  generatedFlatLays: Asset[];
+  selectedFlatLays: Asset[];
+  staticMockup: Asset | null;
+  animatedMockup: Asset | null;
+  animationConfig: AnimationConfig;
+}
+
+export interface Project {
+  id: string;
+  userId: string;
+  name: string;
+  lastSaved: string;
+  editorState: EditorState;
 }

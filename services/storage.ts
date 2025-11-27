@@ -1,10 +1,11 @@
 
-import { GeneratedImageBatch, FitCheckHistoryItem } from '../types';
+import { GeneratedImageBatch, FitCheckHistoryItem, Project } from '../types';
 
 const DB_NAME = 'FlowstateDB';
 const HISTORY_STORE = 'history';
 const FITCHECK_STORE = 'fitcheck_history';
-const DB_VERSION = 2; // Incremented version for new store
+const PROJECTS_STORE = 'projects';
+const DB_VERSION = 3; // Incremented version for new projects store
 
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
@@ -20,6 +21,10 @@ const openDB = (): Promise<IDBDatabase> => {
       }
       if (!db.objectStoreNames.contains(FITCHECK_STORE)) {
         db.createObjectStore(FITCHECK_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(PROJECTS_STORE)) {
+        const projectStore = db.createObjectStore(PROJECTS_STORE, { keyPath: 'id' });
+        projectStore.createIndex('userId', 'userId', { unique: false });
       }
     };
   });
@@ -99,4 +104,40 @@ export const getFitCheckHistory = async (): Promise<FitCheckHistoryItem[]> => {
     console.error("FitCheck Load Error", error);
     return [];
   }
+};
+
+// --- FLOWSTATE ENGINE PROJECTS ---
+
+export const saveProject = async (project: Project): Promise<Project> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PROJECTS_STORE, 'readwrite');
+    const store = tx.objectStore(PROJECTS_STORE);
+    const req = store.put(project);
+    req.onsuccess = () => resolve(project);
+    req.onerror = () => reject(req.error);
+  });
+};
+
+export const getProjectsByUserId = async (userId: string): Promise<Project[]> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PROJECTS_STORE, 'readonly');
+    const store = tx.objectStore(PROJECTS_STORE);
+    const index = store.index('userId');
+    const req = index.getAll(userId);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+};
+
+export const deleteProject = async (projectId: string): Promise<void> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PROJECTS_STORE, 'readwrite');
+    const store = tx.objectStore(PROJECTS_STORE);
+    const req = store.delete(projectId);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
 };
