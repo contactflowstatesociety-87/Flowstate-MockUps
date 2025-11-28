@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { ControlPanel } from './components/ControlPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import FitCheckTool from './components/FitCheckTool';
-import FlowstateTool from './components/FlowstateTool';
+import FlowstateUnified from './components/FlowstateUnified';
+import ThreeSixtyTool from './components/ThreeSixtyTool';
 import { generateMockupBatch } from './services/geminiService';
 import { saveBatch, getHistory } from './services/storage';
 import { AppStatus, GeneratedImageBatch, MockupConfig, AIStudio, NavigationPage } from './types';
-import { Box, Key, CheckCircle, Shirt, Cpu } from 'lucide-react';
+import { Box, Key, CheckCircle, Shirt, Cpu, Rotate3D } from 'lucide-react';
 
 // ------------------------------------------------------------------
 // CONFIGURATION
@@ -134,7 +135,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="hidden md:flex bg-surface p-1 rounded-lg border border-border">
+        <div className="hidden md:flex bg-surface p-1 rounded-lg border border-border overflow-x-auto">
           <button 
             onClick={() => setActivePage('mockup')}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activePage === 'mockup' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
@@ -152,6 +153,12 @@ const App: React.FC = () => {
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activePage === 'engine' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
           >
             <Cpu size={14} /> Flowstate Engine
+          </button>
+          <button 
+            onClick={() => setActivePage('threesixty')}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${activePage === 'threesixty' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
+          >
+            <Rotate3D size={14} /> 360 Mockups
           </button>
         </div>
         
@@ -200,7 +207,11 @@ const App: React.FC = () => {
         )}
 
         {activePage === 'engine' && (
-            <FlowstateTool />
+            <FlowstateUnified />
+        )}
+
+        {activePage === 'threesixty' && (
+            <ThreeSixtyTool />
         )}
       </div>
 

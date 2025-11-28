@@ -28,7 +28,7 @@ export type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 export type Resolution = '1K' | '2K' | '4K';
 export type AestheticStyle = 'Modern Minimal' | 'Cyberpunk' | 'Organic/Eco' | 'High Luxury' | 'Retro 90s' | 'Streetwear';
 export type GenerationMode = 'text' | 'upload' | '3d-scanner';
-export type NavigationPage = 'mockup' | 'fitcheck' | 'engine';
+export type NavigationPage = 'mockup' | 'fitcheck' | 'engine' | 'threesixty';
 
 export interface MockupConfig {
   mode: GenerationMode;
@@ -75,11 +75,13 @@ export interface PromptBuilderOption {
 
 // --- FLOWSTATE ENGINE TYPES ---
 
-export type EngineMode = 'default' | 'strict' | 'flexible' | 'ecommerce' | 'luxury' | 'complex';
+export type EngineMode = 'default' | 'strict' | 'flexible' | 'ecommerce' | 'luxury' | 'complex' | '3d-mockup';
 export type WorkflowStep = 'upload' | 'flatlay' | 'animate' | 'scene';
 
+export type AnimationPreset = '360 Spin' | 'Walking' | 'Windy' | 'Jumping Jacks' | 'Arm Flex' | 'Sleeve in Pocket';
+
 export interface AnimationConfig {
-  preset: string | null;
+  preset: AnimationPreset | string | null;
   aspectRatio: '16:9' | '9:16';
   customPrompt: string | null;
   generateStatic: boolean;

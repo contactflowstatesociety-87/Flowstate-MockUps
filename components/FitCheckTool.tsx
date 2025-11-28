@@ -3,7 +3,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Shirt, RotateCcw, Plus, Upload, Camera, History, Clock, X, Trash2 } from 'lucide-react';
+import { Shirt, RotateCcw, Plus, Upload, Camera, History, Clock, X, Trash2, Download, Files } from 'lucide-react';
 import { generateModelImage, generateVirtualTryOnImage, generatePoseVariation } from '../services/geminiService';
 import { saveFitCheck, getFitCheckHistory } from '../services/storage';
 import { FitCheckHistoryItem } from '../types';
@@ -178,6 +178,34 @@ const FitCheckTool: React.FC = () => {
     }
   }, [currentPoseIndex, outfitHistory, isLoading, currentOutfitIndex]);
 
+  const handleDownloadCurrent = () => {
+    if (displayImageUrl) {
+      const link = document.createElement('a');
+      link.href = displayImageUrl;
+      link.download = `flowstate-fitcheck-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleDownloadAll = () => {
+    const currentLayer = outfitHistory[currentOutfitIndex];
+    if (currentLayer && currentLayer.poseImages) {
+        Object.entries(currentLayer.poseImages).forEach(([pose, url], idx) => {
+             // Stagger downloads slightly to prevent browser blocking
+             setTimeout(() => {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `flowstate-fitcheck-pose-${idx}-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+             }, idx * 250);
+        });
+    }
+  };
+
   // Uploader Sub-Component
   const Uploader = () => {
       const [localError, setLocalError] = useState<string | null>(null);
@@ -268,11 +296,30 @@ const FitCheckTool: React.FC = () => {
             {/* Main Canvas Area */}
             <div className="flex-grow bg-[#121214] border border-[#27272a] rounded-2xl p-4 lg:p-8 flex items-center justify-center relative shadow-2xl overflow-hidden">
                 <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #3f3f46 1px, transparent 0)`, backgroundSize: '24px 24px' }} />
-                <div className="relative w-full h-full flex items-center justify-center max-w-2xl z-10">
-                    <button onClick={handleStartOver} className="absolute top-0 left-0 z-30 bg-black/40 text-gray-400 hover:text-white p-2 rounded-lg border border-[#27272a] backdrop-blur-md transition-colors" title="Start Over">
+                
+                {/* Canvas Controls */}
+                <div className="absolute top-4 left-4 z-30">
+                     <button onClick={handleStartOver} className="bg-black/40 text-gray-400 hover:text-white p-2 rounded-lg border border-[#27272a] backdrop-blur-md transition-colors" title="Start Over">
                         <RotateCcw size={18} />
                     </button>
+                </div>
 
+                <div className="absolute top-4 right-4 z-30 flex gap-2">
+                    {displayImageUrl && (
+                        <>
+                            <button onClick={handleDownloadCurrent} className="bg-black/40 text-gray-400 hover:text-white p-2 rounded-lg border border-[#27272a] backdrop-blur-md transition-colors" title="Download Current Image">
+                                <Download size={18} />
+                            </button>
+                            {outfitHistory[currentOutfitIndex] && Object.keys(outfitHistory[currentOutfitIndex].poseImages).length > 1 && (
+                                <button onClick={handleDownloadAll} className="bg-black/40 text-gray-400 hover:text-white p-2 rounded-lg border border-[#27272a] backdrop-blur-md transition-colors" title="Download All Generated Poses">
+                                    <Files size={18} />
+                                </button>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                <div className="relative w-full h-full flex items-center justify-center max-w-2xl z-10">
                     {displayImageUrl ? <img src={displayImageUrl} className="max-w-full max-h-full object-contain drop-shadow-2xl" /> : <Spinner />}
                     
                     {isLoading && (

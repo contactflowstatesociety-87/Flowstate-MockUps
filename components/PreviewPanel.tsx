@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Download, Box, Maximize2, ZoomIn, ZoomOut, X, History, Clock, Video, Image as ImageIcon, PlayCircle } from 'lucide-react';
+import { Download, Box, Maximize2, ZoomIn, ZoomOut, X, History, Clock, Video, Image as ImageIcon, PlayCircle, AlertCircle } from 'lucide-react';
 import { GeneratedImage, GeneratedImageBatch } from '../types';
 
 interface PreviewPanelProps {
@@ -25,6 +26,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ batch, isLoading, hi
   }, [batch?.id]);
 
   const activeImage = batch?.images[selectedImageIndex];
+  const hasVideo = !!batch?.videoUrl;
 
   const handleDownload = () => {
     if (viewMode === 'image' && activeImage) {
@@ -121,23 +123,29 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ batch, isLoading, hi
           {/* Main View Area */}
           <div className="flex-1 relative rounded-xl overflow-hidden bg-black/20 border border-border/50 flex items-center justify-center">
              
-             {/* Mode Toggle (if video exists) */}
-             {batch.videoUrl && (
-                <div className="absolute top-4 left-4 z-20 flex bg-black/60 rounded-lg p-1 border border-white/10 backdrop-blur-md">
-                   <button 
-                     onClick={() => setViewMode('image')}
-                     className={`p-2 rounded flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'image' ? 'bg-[#FFC20E] text-black' : 'text-gray-400 hover:text-white'}`}
-                   >
-                     <ImageIcon size={14} /> Images
-                   </button>
-                   <button 
-                     onClick={() => setViewMode('video')}
-                     className={`p-2 rounded flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'video' ? 'bg-[#FFC20E] text-black' : 'text-gray-400 hover:text-white'}`}
-                   >
-                     <Video size={14} /> Video
-                   </button>
-                </div>
-             )}
+             {/* Mode Toggle (if video exists or expected) */}
+             <div className="absolute top-4 left-4 z-20 flex bg-black/60 rounded-lg p-1 border border-white/10 backdrop-blur-md">
+                <button 
+                  onClick={() => setViewMode('image')}
+                  className={`p-2 rounded flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'image' ? 'bg-[#FFC20E] text-black' : 'text-gray-400 hover:text-white'}`}
+                >
+                  <ImageIcon size={14} /> Images
+                </button>
+                {hasVideo ? (
+                  <button 
+                    onClick={() => setViewMode('video')}
+                    className={`p-2 rounded flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'video' ? 'bg-[#FFC20E] text-black' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    <Video size={14} /> Video
+                  </button>
+                ) : (
+                   batch.config.mode === '3d-scanner' && (
+                       <div className="p-2 rounded flex items-center gap-2 text-xs text-gray-500 cursor-not-allowed" title="Video generation failed">
+                          <Video size={14} /> <AlertCircle size={12} className="text-red-500"/>
+                       </div>
+                   )
+                )}
+             </div>
 
              {viewMode === 'image' && activeImage && (
                <img 

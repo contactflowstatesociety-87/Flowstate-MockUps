@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { LayoutTemplate, Zap, Leaf, Diamond, Radio, Upload, Type, ChevronDown, Sparkles, Plus, Image as ImageIcon, Camera, Sun, Box, Trash2, Scan, Link as LinkIcon, Shirt } from 'lucide-react';
+import { LayoutTemplate, Zap, Leaf, Diamond, Radio, Upload, Type, ChevronDown, Sparkles, Plus, Image as ImageIcon, Camera, Sun, Box, Trash2, Scan, Link as LinkIcon, Shirt, Cuboid } from 'lucide-react';
 import { AestheticStyle, AspectRatio, MockupConfig, Resolution, STYLES, GenerationMode } from '../types';
 
 interface ControlPanelProps {
@@ -44,10 +44,10 @@ const ANGLES = [
 ];
 
 const SCANNER_VIEWS = [
+  { id: '3d-mockup', label: '3D Mockup Lab', text: '100% Accurate 3D Mockup Replica. High fidelity, 6K resolution, 360 degree view.' },
   { id: 'multi-angle', label: 'Multi Angle Photoshoot', text: 'Cinematic streetwear outfit check, waist level, handheld organic movement' },
   { id: 'exploded', label: 'Exploded View', text: 'Technical exploded view showing components floating apart' },
   { id: 'front', label: 'Front Ortho', text: 'Perfectly flat front orthographic view' },
-  { id: 'hero', label: 'Hero Perspective', text: 'Dramatic 35mm lens hero shot with depth of field' },
 ];
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({ isLoading, onSubmit }) => {
@@ -62,7 +62,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ isLoading, onSubmit 
 
   // 3D Scanner State
   const [scannerImages, setScannerImages] = useState<string[]>([]);
-  const [scannerView, setScannerView] = useState('multi-angle');
+  const [scannerView, setScannerView] = useState('3d-mockup');
   const [productUrl, setProductUrl] = useState('');
   
   // Prompt Builder State
@@ -196,7 +196,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ isLoading, onSubmit 
             <Upload size={14} /> Upload
           </button>
           <button type="button" onClick={() => setActiveTab('3d-scanner')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${activeTab === '3d-scanner' ? 'bg-[#FFC20E] text-black font-bold shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Scan size={14} /> 3D Scan
+            <Cuboid size={14} /> 3D Mockup
           </button>
         </div>
 
