@@ -24,25 +24,27 @@ export default function ThreeSixtyTool() {
     if (!file) return;
     setIsLoading(true);
     setError(null);
-    try {
-        // Read file as base64
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
+    const reader = new FileReader();
+    
+    reader.onload = async () => {
+        try {
             const base64Data = (reader.result as string).split(',')[1];
             const mimeType = file.type;
-            const videoUrl = await generate360Spin(base64Data, mimeType);
+            const videoUrl = await generate360Spin(base64Data, mimeType, '9:16');
             setResultVideoUrl(videoUrl);
+        } catch (e: any) {
+            setError(e.message || "Failed to generate video");
+        } finally {
             setIsLoading(false);
-        };
-        reader.onerror = () => {
-            setError("Failed to read file");
-            setIsLoading(false);
-        };
-    } catch (e: any) {
-        setError(e.message || "Failed to generate video");
+        }
+    };
+    
+    reader.onerror = () => {
+        setError("Failed to read file");
         setIsLoading(false);
-    }
+    };
+    
+    reader.readAsDataURL(file);
   };
 
   const handleDownload = async () => {
@@ -60,7 +62,6 @@ export default function ThreeSixtyTool() {
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Download failed:", e);
-      // Fallback
       const a = document.createElement('a');
       a.href = resultVideoUrl;
       a.download = '360-video.mp4';
@@ -77,7 +78,6 @@ export default function ThreeSixtyTool() {
          </p>
 
          <div className="flex flex-col lg:flex-row gap-8 w-full">
-            {/* Uploader / Preview */}
             <div className="flex-1 bg-[#121214] border border-[#27272a] rounded-2xl p-6 flex flex-col items-center justify-center min-h-[400px]">
                 {previewUrl ? (
                     <div className="relative w-full h-full flex flex-col items-center">
@@ -95,7 +95,6 @@ export default function ThreeSixtyTool() {
                 )}
             </div>
 
-            {/* Action / Result */}
             <div className="flex-1 bg-[#121214] border border-[#27272a] rounded-2xl p-6 flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden">
                 {isLoading && (
                     <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">

@@ -31,7 +31,7 @@ const fileToPart = async (file: File) => {
 };
 
 // ------------------------------------------------------------------
-// ENGINE SERVICE (New Features)
+// ENGINE SERVICE
 // ------------------------------------------------------------------
 
 const modeHeaderMap: Record<string, string> = {
@@ -91,35 +91,24 @@ export const engineService = {
     const header = getModeHeader(mode);
     const prompt = `${header}
 
-PHASE 2: STRICT 3D MOCKUP
-Generate an ULTRA-HIGH RESOLUTION 8K 3D studio mockup photo.
+PHASE 2: STRICT 3D MOCKUP & DIGITAL TWIN
+Generate an ULTRA-HIGH RESOLUTION 8K 3D studio mockup.
 
-CRITICAL PRODUCT FIDELITY RULES (ZERO TOLERANCE):
-1. 100% EXACT DIGITAL TWIN. Do not change a single pixel of the logo, text, or design details.
-2. PRESERVE PROPORTIONS EXACTLY. No distortion. No stretching.
-3. RESOLUTION: 8K. Upscale to 6K minimum. Maximum sharpness.
+CRITICAL DIGITAL TWIN RULES (ZERO TOLERANCE):
+1. 100% ACCURATE REPLICA. Do not change a single pixel of the logo, text, or design details.
+2. EXACT PROPORTIONS. No distortion. No stretching.
+3. RESOLUTION: 8K. Upscale details to 6K minimum. Maximum sharpness.
 4. NO HALLUCINATIONS. Do not add extra buttons, seams, or text that isn't in the reference.
-5. NO CROP. Show entire object centered in frame.
+5. NO CROP. Show entire object centered in frame. Add 10% safety padding around the object.
 
-CATEGORY ANALYSIS & RULES:
-1. IF CLOTHING (Jacket, Hoodie, Shirt, Pants):
-   - Use INVISIBLE GHOST MANNEQUIN.
-   - The clothing must look like it is floating in mid-air.
-   - Hollow clothing form. NO VISIBLE MANNEQUIN. NO CLEAR OR GLASS MANNEQUIN. NO BODY PARTS VISIBLE.
-   - Show the inside of the collar/neck area if applicable.
-   - Clothing must hang naturally with realistic physics.
-
-2. IF ACCESSORY / HARD GOODS (Watch, Bag, Shoe, Hat, Bottle):
-   - Display as a floating 3D product object.
-   - PRESERVE EXACT DIAL DETAILS, MARKERS, HANDS, AND BRANDING for hard goods.
-   - DO NOT REBRAND. DO NOT ALTER COLORS.
-   - Maintain rigid or semi-rigid structure appropriate for the material.
-   - Center in frame, floating in mid-air.
+CATEGORY RULES:
+1. CLOTHING: Use INVISIBLE GHOST MANNEQUIN. Hollow form. NO VISIBLE MANNEQUIN.
+2. HARD GOODS: Floating 3D object. PRESERVE EXACT DIAL DETAILS AND BRANDING.
 
 UNIVERSAL RULES:
-- Lighting: Soft diffused studio light, no harsh contrast.
-- Background: Clean studio gray/white.
-- QUALITY: Octane render, raytracing, 8k, hyper-realistic materials.`;
+- Lighting: Soft diffused studio light.
+- Background: Clean studio white.
+- Negative Prompt: cropping, cut off, bad anatomy, distorted logo, blurry, extra limbs.`;
     return transformImage(base64Images, mimeType, prompt);
   },
 
@@ -130,26 +119,13 @@ UNIVERSAL RULES:
 PHASE 3: FLEXIBLE STUDIO PHOTO
 Generate Premium 8K Photo.
 
-PRODUCT FIDELITY RULES (CRITICAL):
-- 100% IDENTICAL TO REFERENCE. Do not change a single pixel of the logo or design details.
-- Colors must be exact.
+FIDELITY RULES:
+- 100% IDENTICAL TO REFERENCE. Exact Logo. Exact Colors.
+- IF HUMAN MODEL: Skin must be ultra hyper-realistic. Visible pores, vellus hair, natural imperfections. NO PLASTIC SKIN.
 
-HUMAN MODEL RULES (IF APPLICABLE):
-- IF A HUMAN MODEL IS PRESENT: Skin must be ultra hyper-realistic. 
-- Visible pores, slight skin texture imperfections, natural skin tone variation, vellus hair. 
-- NO PLASTIC/SMOOTH AI SKIN. 
-- Eyes must be perfectly symmetrical and realistic.
-- Hands/Fingers must be anatomically correct (5 fingers).
-
-CATEGORY RULES:
-- IF CLOTHING AND NO MODEL SPECIFIED: Use INVISIBLE GHOST MANNEQUIN. Floating in mid-air.
-- IF ACCESSORY: Display as floating 3D product.
-
-SCENE RULES:
-- Allow creative lighting (rim lights, gradients, dramatic shadows).
-- Allow creative background (dark, textured, or soft commercial backdrop).
-- NO EXTRA PROPS. BACKGROUND AND LIGHTING CHANGES ONLY.
-- Look like a high-end commercial campaign.`;
+SCENE:
+- Creative lighting allowed.
+- BACKGROUND AND LIGHTING CHANGES ONLY. NO EXTRA PROPS.`;
     return transformImage(base64Images, mimeType, prompt);
   },
 
@@ -162,16 +138,16 @@ SCENE RULES:
     const header = getModeHeader(mode);
     const prompt = `${header}
 
-PHASE 3: FLEXIBLE MODE 3D ANIMATED VIDEO
+PHASE 3: 3D ANIMATED VIDEO
 Generate a high-fidelity 360-degree turntable loop video.
 
 CRITICAL INSTRUCTIONS:
-1. 100% PRODUCT ACCURACY. Do not change logos, text, or design elements.
-2. RESOLUTION: Upscale to 6K equivalent details.
-3. MOTION: Smooth 360-degree spin. Object remains centered.
+1. 100% PRODUCT ACCURACY. Digital Twin. Do not change logos.
+2. RESOLUTION: 6K Upscale details.
+3. MOTION: Smooth 360-degree spin. Center pivot.
 4. WHOLE OBJECT VISIBLE. No cropping.
 
-Rules: CLOTHING=GHOST MANNEQUIN (Hollow). ACCESSORY=Floating Object. SILENT VIDEO. NO AUDIO.`;
+Rules: CLOTHING=GHOST MANNEQUIN. ACCESSORY=Floating Object. SILENT.`;
     const ai = getClient();
     return ai.models.generateVideos({
         model: 'veo-3.1-fast-generate-preview',
@@ -185,11 +161,10 @@ Rules: CLOTHING=GHOST MANNEQUIN (Hollow). ACCESSORY=Floating Object. SILENT VIDE
     const ai = getClient();
     const safePrompt = `${prompt} 
     CRITICAL: 
-    1. EXACT COPY OF PRODUCT. DO NOT CHANGE LOGOS, COLORS, OR TEXT. 
-    2. IF WATCH/ACCESSORY: PRESERVE DIAL AND HANDS EXACTLY. DO NOT MORPH INTO CLOTHING.
-    3. SILENT VIDEO. NO AUDIO TRACK.
-    4. HYPER-REALISM: If humans present, ensure natural skin texture, visible pores, vellus hair. No plastic skin.
-    5. UPSCALE: Maintain 6K visual fidelity.`;
+    1. EXACT COPY OF PRODUCT. DIGITAL TWIN.
+    2. 360 DEGREE TURNTABLE. SLOW SPIN.
+    3. HYPER-REALISM: Natural skin texture if model present.
+    4. 6K VISUAL FIDELITY.`;
     return ai.models.generateVideos({
         model: 'veo-3.1-fast-generate-preview',
         image: { imageBytes: base64Image, mimeType },
@@ -220,7 +195,6 @@ export const generateModelImage = async (userImage: File): Promise<string> => {
     2. NO PLASTIC SKIN. NO SMOOTHING.
     3. Professional model expression.
     4. Preserve the person's identity and body type exactly.
-    5. Photorealistic lighting.
     
     Return ONLY the final image.`;
     
@@ -243,7 +217,6 @@ export const generateVirtualTryOnImage = async (modelImageUrl: string, garmentIm
     1. 100% PRODUCT ACCURACY. Do not change the logo, color, or design of the garment.
     2. Realistic Fit: Natural folds, shadows, and draping.
     3. Hyper-realistic Skin: Ensure the model's skin remains detailed and natural.
-    4. Streetwear Aesthetic: Enhanced lighting and texture.
     
     Return ONLY the final image.`;
     
@@ -291,24 +264,20 @@ const handleApiResponse = (response: any): string => {
 // MOCKUP GENERATOR SERVICES
 // ------------------------------------------------------------------
 
-// Generate Video Clip using Veo 3.1
 const generateVideo = async (ai: GoogleGenAI, config: MockupConfig): Promise<string | undefined> => {
-  // Always generate video for 3d-scanner mode or if configured
+  // Always generate video for 3d-scanner mode
   if (config.mode !== '3d-scanner') return undefined;
 
   const images = config.images || [];
-  // Use the first image as reference
   const refImage = images.length > 0 ? images[0] : undefined;
 
   let prompt = config.prompt;
   
   if (config.scannerView === 'multi-angle') {
-    prompt = "A cinematic streetwear 'outfit check' video featuring a male model in an urban industrial setting. The shot focuses on the mid-section and upper legs to showcase the fit. The subject is wearing black cargo pants with high-contrast white paint splatter details and a black sweatshirt. He casually adjusts his clothing with one hand, revealing a silver ring and vascular detail. Camera Angle: Waist-Level / Mid-Shot. Camera Movement: Handheld / Floating, Slow Micro-Pan. Lighting: Natural Urban Diffused, High Contrast. Focal Points: Fabric texture, hand details.";
-  } else if (config.scannerView === '3d-mockup') {
-    prompt = "A high-fidelity 360-degree turntable loop video of the product floating in a white studio. 100% accurate replica. Uncropped. Shows entire object rotating smoothly. 6K resolution. Clean lighting.";
+    prompt = "A cinematic streetwear 'outfit check' video featuring a male model. Waist-Level / Mid-Shot. Handheld organic movement. 6K quality.";
   } else {
-    // Default 360 spin
-    prompt = "A high-fidelity 360-degree turntable loop video of the product. Clean studio lighting, smooth rotation, showcasing all angles and details. 6K quality.";
+    // Strict 360 spin for Mockup Lab
+    prompt = "A high-fidelity 360-degree turntable loop video of the product floating in a white studio. 100% accurate replica. Uncropped. Shows entire object rotating smoothly. 6K resolution. Keep object centered. No distortion.";
   }
 
   const model = 'veo-3.1-generate-preview';
@@ -316,7 +285,7 @@ const generateVideo = async (ai: GoogleGenAI, config: MockupConfig): Promise<str
   try {
     const videoConfig: any = {
       numberOfVideos: 1,
-      resolution: '1080p',
+      resolution: '1080p', // API Max
       aspectRatio: config.ratio === '9:16' || config.ratio === '16:9' ? config.ratio : '16:9'
     };
 
@@ -324,46 +293,42 @@ const generateVideo = async (ai: GoogleGenAI, config: MockupConfig): Promise<str
 
     if (refImage) {
       try {
-         const [_, base64Data] = refImage.split(';base64,');
-         request.image = { imageBytes: base64Data, mimeType: 'image/png' };
+         if (refImage.includes(';base64,')) {
+             const parts = refImage.split(';base64,');
+             if (parts.length === 2) {
+                 request.image = { imageBytes: parts[1], mimeType: 'image/png' };
+             }
+         }
       } catch(e) { console.error("Invalid base64 for video", e); }
     }
 
     let operation = await ai.models.generateVideos(request);
 
-    // Error handling loop
     while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 5000));
       operation = await ai.operations.getVideosOperation({ operation: operation });
-      if ((operation as any).error) {
-        throw new Error(`Video generation error: ${(operation as any).error.message}`);
-      }
+      if ((operation as any).error) throw new Error((operation as any).error.message);
     }
 
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (videoUri) {
-      return `${videoUri}&key=${process.env.API_KEY}`;
-    }
+    if (videoUri) return `${videoUri}&key=${process.env.API_KEY}`;
   } catch (e) {
     console.error("Video Generation Failed:", e);
-    return undefined; // Fail gracefully
+    return undefined;
   }
   return undefined;
 };
 
-// New feature: Animate any image using Veo
 export const animateImage = async (base64Data: string, mimeType: string, prompt: string): Promise<string> => {
     const ai = getClient();
     const finalPrompt = `Animate this image: ${prompt}. Cinematic movement, high quality, silent. Upscale to 6K.`;
-    
-    // Using fast-generate for speed on interactive animations
     const model = 'veo-3.1-fast-generate-preview';
     
     let operation = await ai.models.generateVideos({
         model,
         prompt: finalPrompt,
         image: { imageBytes: base64Data, mimeType },
-        config: { numberOfVideos: 1, resolution: '1080p', aspectRatio: '16:9' } // Default aspect
+        config: { numberOfVideos: 1, resolution: '1080p', aspectRatio: '16:9' }
     });
 
     while (!operation.done) {
@@ -372,24 +337,21 @@ export const animateImage = async (base64Data: string, mimeType: string, prompt:
     }
 
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (videoUri) {
-        return `${videoUri}&key=${process.env.API_KEY}`;
-    }
+    if (videoUri) return `${videoUri}&key=${process.env.API_KEY}`;
     throw new Error("Video generation failed");
 };
 
-// Special function for 360 Spin Tool
-export const generate360Spin = async (base64Data: string, mimeType: string): Promise<string> => {
+export const generate360Spin = async (base64Data: string, mimeType: string, ratio: '16:9' | '9:16' = '9:16'): Promise<string> => {
     const ai = getClient();
-    const prompt = "A high-fidelity 360-degree turntable loop video of the product floating in a white studio. 100% accurate replica. Uncropped. Shows entire object rotating smoothly. 6K resolution. Clean lighting. Product must remain identical to reference.";
+    const prompt = "A high-fidelity 360-degree turntable loop video of the product floating in a white studio. 100% accurate replica. Uncropped. Shows entire object rotating smoothly. 6K resolution. Keep object centered. No distortion. Center pivot.";
     
-    const model = 'veo-3.1-generate-preview'; // Use high quality for this specific tool
+    const model = 'veo-3.1-generate-preview';
     
     let operation = await ai.models.generateVideos({
         model,
         prompt,
         image: { imageBytes: base64Data, mimeType },
-        config: { numberOfVideos: 1, resolution: '1080p', aspectRatio: '16:9' }
+        config: { numberOfVideos: 1, resolution: '1080p', aspectRatio: ratio }
     });
 
     while (!operation.done) {
@@ -399,13 +361,10 @@ export const generate360Spin = async (base64Data: string, mimeType: string): Pro
     }
 
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (videoUri) {
-        return `${videoUri}&key=${process.env.API_KEY}`;
-    }
+    if (videoUri) return `${videoUri}&key=${process.env.API_KEY}`;
     throw new Error("Video generation failed");
 };
 
-// Helper to run a single image generation task
 const generateSingleImage = async (ai: GoogleGenAI, config: MockupConfig, index: number): Promise<string> => {
   const stylePrompts: Record<string, string> = {
     'Modern Minimal': 'Clean lines, ample whitespace, matte finishes, neutral color palette, apple-style aesthetics, soft lighting.',
@@ -425,9 +384,7 @@ const generateSingleImage = async (ai: GoogleGenAI, config: MockupConfig, index:
     finalPrompt += ` Use Google Search to find details about this product: ${config.productUrl}. Ensure accurate materials and colors.`;
   }
   
-  // Handle Multiple Images (Upload or 3D Scanner)
   if (config.images && config.images.length > 0) {
-    // Add all images to the request
     config.images.forEach(img => {
       try {
         if (img.includes(';base64,')) {
@@ -440,10 +397,8 @@ const generateSingleImage = async (ai: GoogleGenAI, config: MockupConfig, index:
 
     if (config.mode === '3d-scanner') {
         const isMockupLab = config.scannerView === '3d-mockup';
-        
         finalPrompt += `CRITICAL INSTRUCTION: SHOW WHOLE OBJECT. DO NOT CROP. WIDE ANGLE LENS. Negative prompt: cropping, cut off, text overlay, extra objects.`;
 
-        // 3D Scanner Logic (Split 2 Studio / 2 Lifestyle)
         if (index <= 1) {
             finalPrompt += `
             TASK: Create a 100% accurate 3D Digital Twin/Replica of the uploaded product(s).
@@ -457,51 +412,29 @@ const generateSingleImage = async (ai: GoogleGenAI, config: MockupConfig, index:
             CONTEXT: ${config.prompt || 'Urban environment'}.
             STYLE: ${stylePrompts[config.style]}.
             RULES: The product must remain 100% identical to the reference images. Do not change the design or logos. Integrate realistic lighting and shadows from the scene onto the product.
-            VIEW: ${index === 2 ? "In-context Hero Shot. Wide angle." : "Close-up Texture Detail. Sharp focus."}.
             `;
         }
         
-        if (isMockupLab) {
-            finalPrompt += " Ensure 100% faithful reproduction of the object structure. No extra objects. No text overlays.";
-        }
-        
     } else {
-        // Upload Mode (Multi-Product Composition)
         finalPrompt += `
         TASK: Create a professional product photography composition using ALL the uploaded product images.
         SCENE: ${config.prompt}.
         STYLE: ${stylePrompts[config.style]}.
-        RULES: Arrange the products naturally within the scene. DO NOT ALTER the appearance, logos, or colors of the products themselves. They must look exactly like the reference photos. High quality composite.
-        VARIATION: ${index === 0 ? "Wide angle layout" : index === 1 ? "Close up arrangement" : index === 2 ? "Top down flatlay" : "Creative perspective"}.
+        RULES: Arrange the products naturally within the scene. DO NOT ALTER the appearance, logos, or colors of the products themselves. They must look exactly like the reference photos.
         `;
     }
-
     finalPrompt += ` QUALITY: Photorealistic, 8k resolution, highly detailed, octane render, raw photo, masterpiece, upscale to 6K resolution.`;
 
   } else {
     // Standard Text Logic
     const basePrompt = `High fidelity professional UI design mockup or product shot of: ${config.prompt}. Style: ${stylePrompts[config.style]}`;
     const realismSuffix = " Photorealistic, 8k resolution, highly detailed, octane render, unreal engine 5, raw photo, masterpiece, sharp focus.";
-    const variation = index === 0 ? " " : index === 1 ? " (Alternate angle)" : index === 2 ? " (Close up detail)" : " (Wide contextual shot)";
-    
-    finalPrompt = basePrompt + variation + realismSuffix;
-
-    // Single Legacy Image
-    if (config.image) {
-      try {
-        if (config.image.includes(';base64,')) {
-          const [mimeTypeStr, base64Data] = config.image.split(';base64,');
-          const mimeType = mimeTypeStr.replace('data:', '');
-          parts.push({ inlineData: { data: base64Data, mimeType: mimeType } });
-        }
-      } catch (e) {}
-    }
+    finalPrompt = basePrompt + realismSuffix;
   }
 
   parts.push({ text: finalPrompt });
 
   const model = 'gemini-3-pro-image-preview';
-
   const imageConfig: any = {
     aspectRatio: config.ratio,
     imageSize: config.resolution === '4K' ? '4K' : (config.resolution === '2K' ? '2K' : '1K'), 
@@ -527,9 +460,8 @@ const generateSingleImage = async (ai: GoogleGenAI, config: MockupConfig, index:
 export const generateMockupBatch = async (config: MockupConfig): Promise<{images: string[], video?: string}> => {
   const ai = getClient();
   const imagePromises = [0, 1, 2, 3].map(i => generateSingleImage(ai, config, i));
-  
   let videoPromise: Promise<string | undefined> = Promise.resolve(undefined);
-  // Always generate video if 3d-scanner (including 3d-mockup lab)
+  
   if (config.mode === '3d-scanner') {
     videoPromise = generateVideo(ai, config);
   }

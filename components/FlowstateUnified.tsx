@@ -1,19 +1,9 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { GoogleGenAI, Modality } from "@google/genai";
-import type { Operation, GenerateVideosResponse, GenerateContentResponse } from "@google/genai";
-import { ChevronDown } from 'lucide-react';
-import { engineService } from '../services/geminiService'; // Use shared service
-import { Asset, EditorState, AnimationConfig, AnimationPreset, WorkflowStep, EngineMode } from '../types';
-
-// ==========================================
-// 1. TYPES
-// ==========================================
-// Types imported from ../types.ts to ensure consistency
-
-// ==========================================
-// 3. UI COMPONENTS
-// ==========================================
+import React, { useState } from 'react';
+import type { Operation, GenerateVideosResponse } from "@google/genai";
+import { ChevronDown, Star } from 'lucide-react';
+import { engineService } from '../services/geminiService';
+import { Asset, EditorState, AnimationPreset, EngineMode } from '../types';
 
 const Loader = ({ message }: { message: string }) => (
   <div className="fixed inset-0 bg-gray-900/80 flex flex-col items-center justify-center z-[100] text-white">
@@ -26,55 +16,11 @@ const ApiKeyModal = ({ onSelectKey }: { onSelectKey: () => void }) => (
   <div className="fixed inset-0 bg-gray-900/75 flex items-center justify-center z-[60] p-4">
     <div className="bg-[#18181b] rounded-xl p-8 max-w-md w-full border border-[#27272a] text-white shadow-2xl">
       <h2 className="text-2xl font-bold mb-4">API Key Required</h2>
-      <p className="text-gray-400 mb-6">Select a paid API key for video generation.</p>
       <button onClick={onSelectKey} className="w-full bg-[#FFC20E] text-black py-3 rounded-lg hover:bg-[#e6af0b] font-bold">Select API Key</button>
     </div>
   </div>
 );
 
-// --- Mode Selector ---
-const ModeSelector = ({ selectedMode, onChangeMode }: { selectedMode: EngineMode; onChangeMode: (m: EngineMode) => void }) => {
-  const modes: { key: EngineMode; label: string; desc: string }[] = [
-    { key: 'default', label: 'Default 5X', desc: 'Generates 6 assets: All styles + Video.' },
-    { key: 'strict', label: 'Strict Only', desc: '2 Flat Lays, 2 Static 3D Mockups.' },
-    { key: 'flexible', label: 'Flexible Only', desc: '2 Creative Photos, 2 Videos.' },
-    { key: 'ecommerce', label: 'Ecommerce', desc: 'Clean. 1 Flat, 1 Mockup, 1 Photo, 1 Video.' },
-    { key: 'luxury', label: 'Luxury', desc: 'Cinematic. 1 Flat, 1 Mockup, 1 Photo, 1 Video.' },
-    { key: 'complex', label: 'Complex Mat.', desc: 'Texture Focus. 1 Flat, 1 Mockup, 1 Photo, 1 Video.' },
-    { key: '3d-mockup', label: '3D Lab', desc: 'Pure 3D Mockup. Strict 6K Resolution.' }
-  ];
-
-  return (
-    <div className="w-full mb-6 relative z-20">
-      <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Generation Mode</label>
-      <div className="flex flex-wrap gap-2">
-        {modes.map((mode, index) => {
-            let positionClasses = "left-1/2 transform -translate-x-1/2 text-center";
-            let arrowClasses = "left-1/2 transform -translate-x-1/2";
-            if (index === 0) { positionClasses = "left-0 text-left"; arrowClasses = "left-4"; }
-            else if (index === modes.length - 1) { positionClasses = "right-0 text-right"; arrowClasses = "right-4"; }
-
-            return (
-              <div key={mode.key} className="group relative">
-                <button
-                  onClick={() => onChangeMode(mode.key)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${selectedMode === mode.key ? 'bg-[#FFC20E] text-black border-[#FFC20E]' : 'text-gray-400 border-[#27272a] hover:text-white hover:border-gray-500'}`}
-                >
-                  {mode.label}
-                </button>
-                <div className={`absolute bottom-full mb-2 w-48 p-3 bg-[#18181b] text-white text-xs rounded shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity border border-[#27272a] z-50 ${positionClasses}`}>
-                  {mode.desc}
-                  <div className={`absolute top-full border-4 border-transparent border-t-[#18181b] ${arrowClasses}`}></div>
-                </div>
-              </div>
-            );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// --- Canvas & Assets ---
 const normalizeImage = (file: File): Promise<{ base64: string; mimeType: string }> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -131,10 +77,6 @@ const Canvas = ({ assets, selectedIds, onSelect, onPreview, onDownload }: any) =
   );
 };
 
-// ==========================================
-// 4. MAIN COMPONENT (FlowstateUnified)
-// ==========================================
-
 export default function FlowstateUnified() {
   const [editorState, setEditorState] = useState<EditorState>({
     currentStep: 'upload', generationMode: 'default', uploadedAssets: [], generatedFlatLays: [], selectedFlatLays: [], staticMockup: null, animatedMockup: null,
@@ -148,39 +90,25 @@ export default function FlowstateUnified() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Animation Presets
   const ANIMATION_PRESETS: AnimationPreset[] = [
     '360 Spin', 'Walking', 'Windy', 'Jumping Jacks', 'Arm Flex', 'Sleeve in Pocket'
   ];
-
-  const checkVideoResolution = (videoUrl: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = () => resolve(video.videoWidth >= 1080 || video.videoHeight >= 1080);
-        video.onerror = () => resolve(false);
-        video.src = videoUrl;
-    });
-  };
 
   const handleVeoOperation = async (videoGenerator: () => Promise<Operation<GenerateVideosResponse>>): Promise<Asset> => {
       let attempts = 0; const maxAttempts = 3;
       while(attempts < maxAttempts) {
           attempts++;
-          if(attempts > 1) setLoadingMsg(`Retrying video (Attempt ${attempts}/${maxAttempts}) for 1080p...`);
-          
           let op = await videoGenerator();
           while(!op.done) { await new Promise(r => setTimeout(r, 5000)); op = await engineService.checkVideoOperationStatus(op); }
-          
           const uri = op.response?.generatedVideos?.[0]?.video?.uri;
           if(uri) {
               const res = await fetch(`${uri}&key=${process.env.API_KEY}`);
               const blob = await res.blob();
               const url = URL.createObjectURL(blob);
-              if(await checkVideoResolution(url)) return { id: `vid-${Date.now()}`, type: 'video', originalFile: { name: 'video.mp4', type: 'video/mp4' }, originalB64: '', processedUrl: url };
+              return { id: `vid-${Date.now()}`, type: 'video', originalFile: { name: 'video.mp4', type: 'video/mp4' }, originalB64: '', processedUrl: url };
           }
       }
-      throw new Error("Failed to generate 1080p video after retries.");
+      throw new Error("Video generation failed.");
   };
 
   const handleUpload = async (files: File[]) => {
@@ -206,57 +134,16 @@ export default function FlowstateUnified() {
     };
 
     try {
+        setLoadingMsg("Generating Assets...");
         if (mode === 'default') {
-            setLoadingMsg("Generating 5X Suite...");
-            
-            setLoadingMsg("1/8: Strict Flat Lay...");
             addAsset(await engineService.generateStrictFlatLay(baseAsset.originalB64, baseAsset.originalFile.type, 'strict'), "Strict Flat Lay");
-            
-            setLoadingMsg("2/8: Strict 3D Mockup...");
             addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, 'strict'), "Strict 3D Mockup");
-            
-            setLoadingMsg("3/8: Flexible Studio Photo...");
             addAsset(await engineService.generateFlexibleStudioPhoto([baseAsset.originalB64], baseAsset.originalFile.type, 'flexible'), "Flexible Photo");
-            
-            setLoadingMsg("4/8: Ecommerce Mockup...");
-            addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, 'ecommerce'), "Ecommerce Mockup");
-            
-            setLoadingMsg("5/8: Luxury Photo...");
-            addAsset(await engineService.generateFlexibleStudioPhoto([baseAsset.originalB64], baseAsset.originalFile.type, 'luxury'), "Luxury Photo");
-            
-            setLoadingMsg("6/8: Complex Mockup...");
-            addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, 'complex'), "Complex Mockup");
-
-            setLoadingMsg("7/8: 3D Lab Mockup...");
             addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, '3d-mockup'), "3D Lab Mockup");
-
-            setLoadingMsg("8/8: Animated Video...");
-            try {
-                const vid = await handleVeoOperation(() => engineService.generateFlexibleVideo(baseAsset.originalB64, baseAsset.originalFile.type, 'default'));
-                vid.label = "Default 5X Video"; newAssets.push(vid);
-            } catch(e) { console.warn("Video failed", e); }
-
-        } else if (mode === 'strict') {
-            setLoadingMsg("Generating Strict Set...");
-            addAsset(await engineService.generateStrictFlatLay(baseAsset.originalB64, baseAsset.originalFile.type, 'strict'), "Strict Flat Lay 1");
-            addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, 'strict'), "Strict Mockup 1");
-            addAsset(await engineService.generateStrictFlatLay(baseAsset.originalB64, baseAsset.originalFile.type, 'strict'), "Strict Flat Lay 2");
-            addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, 'strict'), "Strict Mockup 2");
-        } else if (mode === '3d-mockup') {
-             setLoadingMsg("Generating 3D Lab Assets...");
-             addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, '3d-mockup'), "3D Mockup 1");
-             addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, '3d-mockup'), "3D Mockup 2");
-             try { newAssets.push(await handleVeoOperation(() => engineService.generateFlexibleVideo(baseAsset.originalB64, baseAsset.originalFile.type, '3d-mockup'))); } catch(e){}
-             try { newAssets.push(await handleVeoOperation(() => engineService.generateFlexibleVideo(baseAsset.originalB64, baseAsset.originalFile.type, '3d-mockup'))); } catch(e){}
+            try { newAssets.push(await handleVeoOperation(() => engineService.generateFlexibleVideo(baseAsset.originalB64, baseAsset.originalFile.type, 'default'))); } catch(e){}
         } else {
-             // Specific Modes
-             setLoadingMsg(`Generating ${mode} assets...`);
-             addAsset(await engineService.generateStrictFlatLay(baseAsset.originalB64, baseAsset.originalFile.type, mode), `${mode} Flat`);
              addAsset(await engineService.generateStrict3DMockup([baseAsset.originalB64], baseAsset.originalFile.type, mode), `${mode} Mockup`);
-             addAsset(await engineService.generateFlexibleStudioPhoto([baseAsset.originalB64], baseAsset.originalFile.type, mode), `${mode} Photo`);
-             try { newAssets.push(await handleVeoOperation(() => engineService.generateFlexibleVideo(baseAsset.originalB64, baseAsset.originalFile.type, mode))); } catch(e){}
         }
-
         setEditorState(p => ({ ...p, generatedFlatLays: newAssets, selectedFlatLays: [] }));
     } catch(e: any) { setError(e.message); if(e.message.includes('Key')) setShowKeyModal(true); }
     setIsLoading(false);
@@ -266,26 +153,19 @@ export default function FlowstateUnified() {
      if(!editorState.selectedFlatLays.length) return;
      setIsLoading(true); setError(null);
      const primary = editorState.selectedFlatLays[0];
-     const { preset, customPrompt, aspectRatio, generateStatic, generateVideo } = editorState.animationConfig;
+     const { preset, customPrompt, aspectRatio } = editorState.animationConfig;
 
      try {
-         if(generateStatic) {
-             setLoadingMsg("Generating Static Mockup...");
-             const res = await engineService.generateStrict3DMockup(editorState.selectedFlatLays.map(x=>x.originalB64), primary.originalFile.type, editorState.generationMode);
-             setEditorState(p => ({...p, staticMockup: { id: `stat-${Date.now()}`, type: 'image', label: 'Static Mockup', originalFile: {name:'static.png', type: res.mimeType}, originalB64: res.base64 }}));
-         }
-         if(generateVideo) {
-             setLoadingMsg("Generating Video...");
-             let prompt = "Hyper realistic 3D mockup video. ";
-             if(customPrompt) prompt += `Action: ${customPrompt}. `;
-             else if(preset) prompt += `Action: ${preset}. `;
-             prompt += "Rules: CLOTHING=GHOST MANNEQUIN. ACCESSORY=FLOATING. ";
-             
-             const vid = await handleVeoOperation(() => engineService.generateVideoFromImage(primary.originalB64, primary.originalFile.type, prompt, aspectRatio));
-             vid.label = "Animated Video";
-             setEditorState(p => ({...p, animatedMockup: vid, currentStep: 'scene'}));
-         }
-     } catch(e: any) { setError(e.message); if(e.message.includes('Key')) setShowKeyModal(true); }
+         setLoadingMsg("Generating Video...");
+         let prompt = "Hyper realistic 3D mockup video. ";
+         if(customPrompt) prompt += `Action: ${customPrompt}. `;
+         else if(preset) prompt += `Action: ${preset}. `;
+         prompt += "Rules: CLOTHING=GHOST MANNEQUIN. ACCESSORY=FLOATING. ";
+         
+         const vid = await handleVeoOperation(() => engineService.generateVideoFromImage(primary.originalB64, primary.originalFile.type, prompt, aspectRatio));
+         vid.label = "Animated Video";
+         setEditorState(p => ({...p, animatedMockup: vid, currentStep: 'scene'}));
+     } catch(e: any) { setError(e.message); }
      setIsLoading(false);
   };
 
@@ -313,11 +193,9 @@ export default function FlowstateUnified() {
       <div className={`${sidebarOpen?'translate-x-0':'-translate-x-full'} md:translate-x-0 transition-transform fixed md:static inset-y-0 left-0 w-80 bg-[#121214] border-r border-[#27272a] z-30 flex flex-col`}>
           <div className="p-6">
               <h2 className="text-xl font-bold text-white mb-1">Creative Workflow</h2>
-              <p className="text-xs text-gray-400">Follow the steps to bring your design to life.</p>
           </div>
           
           <div className="p-4 flex-1 overflow-y-auto">
-             <ModeSelector selectedMode={editorState.generationMode} onChangeMode={(m)=>setEditorState(p=>({...p, generationMode: m}))} />
              <div className="space-y-6 mt-6">
                  {/* Step 1 */}
                  <div className="flex gap-4">
@@ -327,14 +205,11 @@ export default function FlowstateUnified() {
                     </div>
                     <div className="flex-1 pb-4">
                         <h3 className="font-bold text-sm mb-2">Upload Images</h3>
-                        <p className="text-xs text-gray-400 mb-3">Upload your product design for best results.</p>
-                        {editorState.currentStep==='upload' ? (
+                        {editorState.currentStep==='upload' && (
                             <label className="block w-full bg-[#FFC20E] hover:bg-[#e6af0b] text-black text-sm font-bold py-2 rounded text-center cursor-pointer transition-colors">
                                 Upload Image
                                 <input type="file" onChange={(e)=>e.target.files && handleUpload(Array.from(e.target.files))} className="hidden" />
                             </label>
-                        ) : (
-                            editorState.uploadedAssets.length > 0 && <div className="text-xs text-green-500 font-bold">✓ Uploaded</div>
                         )}
                     </div>
                  </div>
@@ -347,10 +222,8 @@ export default function FlowstateUnified() {
                     </div>
                     <div className="flex-1 pb-4">
                         <h3 className="font-bold text-sm mb-2">Generate</h3>
-                        {editorState.currentStep==='flatlay' ? (
+                        {editorState.currentStep==='flatlay' && (
                             <button onClick={handleGenerate} className="w-full bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold py-2 rounded transition-colors">Generate Assets</button>
-                        ) : (
-                            editorState.generatedFlatLays.length > 0 && <div className="text-xs text-green-500 font-bold">✓ Generated</div>
                         )}
                         {editorState.generatedFlatLays.length > 0 && editorState.currentStep==='flatlay' && (
                              <button onClick={()=>setEditorState(p=>({...p, currentStep: 'animate'}))} disabled={!editorState.selectedFlatLays.length} className="w-full mt-2 bg-[#FFC20E] hover:bg-[#e6af0b] text-black text-sm font-bold py-2 rounded disabled:opacity-50">Next Step &rarr;</button>
@@ -368,14 +241,6 @@ export default function FlowstateUnified() {
                         <h3 className="font-bold text-sm mb-2">Create Animation</h3>
                         {editorState.currentStep==='animate' && (
                          <div className="space-y-3 bg-[#18181b] p-3 rounded-lg border border-[#27272a]">
-                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-gray-400">GENERATE VIDEO</span>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" className="sr-only peer" checked={editorState.animationConfig.generateVideo} onChange={e => setEditorState(p => ({...p, animationConfig: {...p.animationConfig, generateVideo: e.target.checked}}))} />
-                                    <div className="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FFC20E]"></div>
-                                </label>
-                             </div>
-                             
                              <div>
                                 <label className="text-[10px] font-bold text-gray-400 block mb-1">PRESET</label>
                                 <div className="relative">
@@ -386,39 +251,17 @@ export default function FlowstateUnified() {
                                     >
                                         <option value="">Select a preset...</option>
                                         {ANIMATION_PRESETS.map(preset => (
-                                            <option key={preset} value={preset}>{preset}</option>
+                                            <option key={preset} value={preset}>{preset} {preset === '360 Spin' ? '✨' : ''}</option>
                                         ))}
                                     </select>
                                     <ChevronDown className="absolute right-2 top-2.5 text-gray-400 pointer-events-none" size={12} />
                                 </div>
                              </div>
-
-                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 block mb-1">CUSTOM PROMPT</label>
-                                <textarea 
-                                    placeholder="Describe motion..." 
-                                    className="w-full bg-[#121214] text-white text-xs p-2 rounded border border-[#27272a] focus:border-[#FFC20E] outline-none resize-none" 
-                                    rows={2} 
-                                    onChange={e=>setEditorState(p=>({...p, animationConfig: {...p.animationConfig, customPrompt: e.target.value}}))}
-                                ></textarea>
-                             </div>
-
                              <button onClick={handleAnimate} className="w-full bg-[#FFC20E] hover:bg-[#e6af0b] text-black text-sm font-bold py-2 rounded transition-colors">Create</button>
                          </div>
                         )}
                     </div>
                  </div>
-                 
-                 {/* Step 4 */}
-                 <div className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${editorState.currentStep==='scene' ? 'bg-[#FFC20E] text-black' : 'bg-gray-700 text-gray-400'}`}>4</div>
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="font-bold text-sm text-gray-400">Place in Scene</h3>
-                    </div>
-                 </div>
-
              </div>
           </div>
       </div>
