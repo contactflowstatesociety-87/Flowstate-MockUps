@@ -16,7 +16,7 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-function getFriendlyErrorMessage(error: unknown, context: string): string {
+function getFriendlyErrorMessage(error: any, context: string): string {
     let rawMessage = 'An unknown error occurred.';
     if (error instanceof Error) {
         rawMessage = error.message;

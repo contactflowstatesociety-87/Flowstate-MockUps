@@ -1,242 +1,71 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ControlPanel } from './components/ControlPanel';
 import { PreviewPanel } from './components/PreviewPanel';
 import FitCheckTool from './components/FitCheckTool';
 import FlowstateUnified from './components/FlowstateUnified';
 import ThreeSixtyTool from './components/ThreeSixtyTool';
-import { generateMockupBatch } from './services/geminiService';
-import { saveBatch, getHistory } from './services/storage';
-import { AppStatus, GeneratedImageBatch, MockupConfig, AIStudio, NavigationPage } from './types';
-import { Box, Key, CheckCircle, Shirt, Cpu, Rotate3D } from 'lucide-react';
 import { ToastProvider } from './components/Toast';
+import { Box, Shirt, Cpu, Rotate3D, Menu } from 'lucide-react';
+import { NavigationPage } from './types';
 
-// ------------------------------------------------------------------
-// CONFIGURATION
-// ------------------------------------------------------------------
-const LOGO_URL = "https://casqcroasbqlxwdheybm.supabase.co/storage/v1/object/sign/Flowstate%20Mock%20Ups%20Images/Flowstate%20society%20Large%20white%20writing.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9mNDFmZTBlMC0xN2FhLTRkYTctODU0Yy04NGI5ZjI4YmUzOTMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJGbG93c3RhdGUgTW9jayBVcHMgSW1hZ2VzL0Zsb3dzdGF0ZSBzb2NpZXR5IExhcmdlIHdoaXRlIHdyaXRpbmcucG5nIiwiaWF0IjoxNzY0MTEyNjU2LCJleHAiOjE5MjE3OTI2NTZ9.NQdQk7u56rCvnyd497_rqivNnIo6fnFEOFcV8OSInGk"; 
-// ------------------------------------------------------------------
-
-const AppContent: React.FC = () => {
+const AppContent = () => {
   const [activePage, setActivePage] = useState<NavigationPage>('mockup');
-  const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
-  const [currentBatch, setCurrentBatch] = useState<GeneratedImageBatch | null>(null);
-  const [history, setHistory] = useState<GeneratedImageBatch[]>([]);
-  const [apiKeyConnected, setApiKeyConnected] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Load history from IndexedDB on mount
-  useEffect(() => {
-    const loadHistoryData = async () => {
-      try {
-        const savedHistory = await getHistory();
-        setHistory(savedHistory);
-      } catch (e) {
-        console.error("Failed to load history", e);
-      }
-    };
-    loadHistoryData();
-  }, []);
-
-  useEffect(() => {
-    const checkApiKey = async () => {
-      const studio = (window as any).aistudio as AIStudio;
-      if (studio) {
-        try {
-          const hasKey = await studio.hasSelectedApiKey();
-          setApiKeyConnected(hasKey);
-        } catch (error) {
-          console.error("Error checking API key:", error);
-        }
-      }
-    };
-    checkApiKey();
-  }, []);
-
-  const handleConnectApi = async () => {
-    const studio = (window as any).aistudio as AIStudio;
-    if (studio) {
-      try {
-        await studio.openSelectKey();
-        setApiKeyConnected(true);
-      } catch (error) {
-        console.error("Error selecting API key:", error);
-      }
-    }
-  };
-
-  const handleGenerate = async (config: MockupConfig) => {
-    try {
-      setStatus(AppStatus.GENERATING);
-      
-      const { images, video } = await generateMockupBatch(config);
-      
-      const newBatch: GeneratedImageBatch = {
-        id: Date.now().toString(),
-        timestamp: Date.now(),
-        prompt: config.prompt,
-        config: config,
-        videoUrl: video,
-        images: images.map((url, index) => ({
-          id: `${Date.now()}-${index}`,
-          url: url,
-          prompt: config.prompt
-        }))
-      };
-      
-      setCurrentBatch(newBatch);
-      
-      // Update history state
-      const newHistory = [newBatch, ...history];
-      setHistory(newHistory);
-      
-      // Save to IndexedDB (asynchronous)
-      await saveBatch(newBatch);
-      
-      setStatus(AppStatus.SUCCESS);
-    } catch (error: any) {
-      console.error(error);
-      setStatus(AppStatus.ERROR);
-      
-      if (error.toString().includes("Requested entity was not found")) {
-        setApiKeyConnected(false);
-        const studio = (window as any).aistudio as AIStudio;
-        if (studio) {
-          await studio.openSelectKey();
-          setApiKeyConnected(true);
-        }
-      }
-    }
-  };
-
-  const handleSelectHistory = (batch: GeneratedImageBatch) => {
-    setCurrentBatch(batch);
-  };
+  const navItems = [
+    { id: 'mockup', label: 'Mockup Generator', icon: Box },
+    { id: 'fitcheck', label: 'Fit Check', icon: Shirt },
+    { id: 'engine', label: 'Flowstate Engine', icon: Cpu },
+    { id: 'threesixty', label: '360 Mockups', icon: Rotate3D },
+  ];
 
   return (
-    <div className="min-h-screen bg-background text-white font-sans selection:bg-[#FFC20E] selection:text-black flex flex-col">
-      
-      {/* Navbar */}
-      <header className="h-16 border-b border-border flex items-center justify-between px-4 lg:px-10 bg-background/80 backdrop-blur-sm sticky top-0 z-50 shrink-0 gap-4">
-        <div className="flex items-center gap-3 shrink-0">
-          {LOGO_URL ? (
-            <img 
-              src={LOGO_URL} 
-              alt="Flowstate Logo" 
-              className="h-8 w-auto object-contain"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Box size={18} className="text-white fill-white/20" strokeWidth={2.5} />
-            </div>
-          )}
-          <div className="flex items-baseline gap-1 hidden sm:flex">
-             <span className="font-bold text-lg tracking-tight">Flowstate</span>
-             <span className="font-mono text-gray-500 text-sm">.foundry</span>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col">
+      <header className="h-16 border-b border-[#27272a] flex items-center justify-between px-4 lg:px-10 bg-[#050505]/80 backdrop-blur sticky top-0 z-50">
+         <div className="flex items-center gap-3 font-bold text-xl tracking-tight">Flowstate<span className="text-[#FFC20E]">.foundry</span></div>
+         
+         <div className="hidden md:flex flex-1 justify-center gap-2">
+            {navItems.map(item => (
+               <button key={item.id} onClick={() => setActivePage(item.id as any)} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${activePage === item.id ? 'bg-[#FFC20E] text-black' : 'text-gray-400 hover:text-white'}`}>
+                  {item.label}
+               </button>
+            ))}
+         </div>
 
-        {/* Navigation Tabs - Centered and Scrollable on mobile */}
-        <div className="flex-1 flex justify-center w-full md:w-auto overflow-hidden">
-          <div className="flex overflow-x-auto no-scrollbar items-center gap-2 bg-surface p-1 rounded-lg border border-border max-w-full">
-            <button 
-              onClick={() => setActivePage('mockup')}
-              className={`px-3 lg:px-4 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${activePage === 'mockup' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
-            >
-              Mockup Generator
-            </button>
-            <button 
-              onClick={() => setActivePage('fitcheck')}
-              className={`px-3 lg:px-4 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${activePage === 'fitcheck' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
-            >
-              <Shirt size={14} /> Fit Check
-            </button>
-            <button 
-              onClick={() => setActivePage('engine')}
-              className={`px-3 lg:px-4 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${activePage === 'engine' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
-            >
-              <Cpu size={14} /> Flowstate Engine
-            </button>
-            <button 
-              onClick={() => setActivePage('threesixty')}
-              className={`px-3 lg:px-4 py-1.5 text-xs lg:text-sm font-medium rounded-md transition-all flex items-center gap-2 whitespace-nowrap ${activePage === 'threesixty' ? 'bg-[#FFC20E] text-black shadow font-bold' : 'text-gray-400 hover:text-white'}`}
-            >
-              <Rotate3D size={14} /> 360 Mockups
-            </button>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FFC20E] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FFC20E]"></span>
-            </span>
-            <span className="text-xs font-mono font-bold text-gray-400">Pro Active</span>
-          </div>
-          
-          <button 
-            onClick={handleConnectApi}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
-              apiKeyConnected 
-                ? 'bg-[#FFC20E]/10 text-[#FFC20E] border-[#FFC20E]/20 hover:bg-[#FFC20E]/20' 
-                : 'bg-white/5 hover:bg-white/10 text-gray-400 border-white/10'
-            }`}
-          >
-             {apiKeyConnected ? <CheckCircle size={14} /> : <Key size={14} />}
-             <span className="hidden sm:inline">{apiKeyConnected ? 'Connected' : 'Connect'}</span>
-          </button>
-        </div>
+         <div className="md:hidden relative">
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}><Menu /></button>
+            {isMobileMenuOpen && (
+               <div className="absolute top-full right-0 mt-2 w-48 bg-[#121214] border border-[#27272a] rounded-xl overflow-hidden z-50">
+                  {navItems.map(item => (
+                     <button key={item.id} onClick={() => { setActivePage(item.id as any); setIsMobileMenuOpen(false); }} className="block w-full text-left px-4 py-3 text-sm hover:bg-white/5 border-b border-[#27272a] last:border-0">
+                        {item.label}
+                     </button>
+                  ))}
+               </div>
+            )}
+         </div>
       </header>
 
-      {/* Main Content Area */}
-      <div className="flex-grow flex flex-col min-h-0 overflow-y-auto overflow-x-hidden">
-        {activePage === 'mockup' && (
+      <div className="flex-grow flex flex-col">
+         {activePage === 'mockup' && (
             <main className="p-4 lg:p-8 max-w-[1600px] mx-auto w-full flex flex-col lg:flex-row gap-8 items-start">
-              <ControlPanel 
-                  isLoading={status === AppStatus.GENERATING} 
-                  onSubmit={handleGenerate} 
-              />
-              
-              <div className="flex-1 w-full flex flex-col">
-                 {/* Layout Spacer: Moves preview panel down to align with Control Panel Form */}
-                 {/* Increased height to 150px and logo size to ensure perfect level alignment and visibility */}
-                 <div className="hidden lg:flex h-[150px] items-center justify-center opacity-100 pointer-events-none mb-4">
-                    {LOGO_URL && <img src={LOGO_URL} className="h-20 w-auto object-contain drop-shadow-2xl" alt="Flowstate Society" />}
-                 </div>
-                 
-                 <PreviewPanel 
-                    batch={currentBatch} 
-                    isLoading={status === AppStatus.GENERATING}
-                    history={history}
-                    onSelectHistory={handleSelectHistory}
-                />
-              </div>
+               <ControlPanel isLoading={false} onSubmit={() => {}} />
+               <div className="flex-1 w-full flex flex-col">
+                  {/* Spacer for Level Alignment */}
+                  <div className="hidden lg:flex h-[160px] items-center justify-center mb-4">
+                     {/* Placeholder for Big Logo */}
+                  </div>
+                  <PreviewPanel batch={null} isLoading={false} history={[]} onSelectHistory={() => {}} />
+               </div>
             </main>
-        )}
-        
-        {activePage === 'fitcheck' && (
-            <FitCheckTool />
-        )}
-
-        {activePage === 'engine' && (
-            <FlowstateUnified />
-        )}
-
-        {activePage === 'threesixty' && (
-            <ThreeSixtyTool />
-        )}
+         )}
+         {activePage === 'fitcheck' && <FitCheckTool />}
+         {activePage === 'engine' && <FlowstateUnified />}
+         {activePage === 'threesixty' && <ThreeSixtyTool />}
       </div>
-
     </div>
   );
 };
 
-const App: React.FC = () => {
-  return (
-    <ToastProvider>
-      <AppContent />
-    </ToastProvider>
-  );
-};
-
-export default App;
+export default function App() { return <ToastProvider><AppContent /></ToastProvider>; }
